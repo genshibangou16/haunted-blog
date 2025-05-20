@@ -5,6 +5,7 @@ class BlogsController < ApplicationController
 
   before_action :set_blog, only: %i[show edit update destroy]
   before_action :check_user_ownership, only: %i[edit update destroy]
+  before_action :check_user_ownership_for_secret, only: %i[show]
 
   def index
     @blogs = Blog.search(params[:term]).published.default_order
@@ -54,5 +55,9 @@ class BlogsController < ApplicationController
 
   def check_user_ownership
     raise ActiveRecord::RecordNotFound unless @blog.owned_by?(current_user)
+  end
+
+  def check_user_ownership_for_secret
+    raise ActiveRecord::RecordNotFound if @blog.secret && !@blog.owned_by?(current_user)
   end
 end
