@@ -6,6 +6,7 @@ class Blog < ApplicationRecord
   has_many :liking_users, class_name: 'User', source: :user, through: :likings
 
   validates :title, :content, presence: true
+  validate :eyecatch_requires_premium
 
   scope :published, -> { where('secret = FALSE') }
 
@@ -18,5 +19,13 @@ class Blog < ApplicationRecord
 
   def owned_by?(target_user)
     user == target_user
+  end
+
+  private
+
+  def eyecatch_requires_premium
+    return unless random_eyecatch && !user.premium
+
+    errors.add(:random_eyecatch, 'Premium users can only use random eyecatch')
   end
 end
