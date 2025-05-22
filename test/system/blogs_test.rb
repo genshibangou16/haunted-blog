@@ -19,14 +19,15 @@ class BlogsTest < ApplicationSystemTestCase
     assert_text 'こんにちは。こんにちは。'
 
     # ログアウトしても同じように表示される
-    sign_out
-    assert_current_path root_path
-    assert_text 'こんにちは、アリスです'
-    assert_text 'こんばんは、ボブです'
-    assert_no_text '秘密のブログです'
+    Capybara.using_session('Anonymous session') do
+      visit root_path
+      assert_text 'こんにちは、アリスです'
+      assert_text 'こんばんは、ボブです'
+      assert_no_text '秘密のブログです'
 
-    click_link 'こんにちは、アリスです'
-    assert_text 'こんにちは。こんにちは。'
+      click_link 'こんにちは、アリスです'
+      assert_text 'こんにちは。こんにちは。'
+    end
   end
 
   test 'ブログの作成' do
@@ -45,41 +46,45 @@ class BlogsTest < ApplicationSystemTestCase
     assert_selector '.blog-eyecatch'
 
     # 通常ユーザーの場合 - アイキャッチ画像が挿入できない
-    sign_out
-    sign_in_as(@bob)
-    click_link 'New blog'
-    fill_in 'タイトル', with: '今日の出来事'
-    fill_in '本文', with: 'ボブと遊びました。'
-    assert_no_field 'ランダムなアイキャッチ画像を挿入する'
-    click_button '登録する'
+    Capybara.using_session("Bob's session") do
+      sign_in_as(@bob)
+      click_link 'New blog'
+      fill_in 'タイトル', with: '今日の出来事'
+      fill_in '本文', with: 'ボブと遊びました。'
+      assert_no_field 'ランダムなアイキャッチ画像を挿入する'
+      click_button '登録する'
 
-    assert_text 'Blog was successfully created.'
-    assert_selector '.blog-post-title', text: '今日の出来事'
-    assert_selector '.blog-content', text: 'ボブと遊びました。'
-    assert_no_selector '.blog-eyecatch'
+      assert_text 'Blog was successfully created.'
+      assert_selector '.blog-post-title', text: '今日の出来事'
+      assert_selector '.blog-content', text: 'ボブと遊びました。'
+      assert_no_selector '.blog-eyecatch'
+    end
   end
 
   test 'ブログの編集と削除' do
     # 自分のブログは編集と削除ができる
-    sign_in_as(@alice)
-    visit blog_path(blogs(:alice_blog))
-    click_link 'Edit this blog'
-    fill_in 'タイトル', with: 'はろー、アリスです'
-    click_button '更新する'
+    Capybara.using_session('Alert sandbox') do
+      sign_in_as(@alice)
+      visit blog_path(blogs(:alice_blog))
+      click_link 'Edit this blog'
+      fill_in 'タイトル', with: 'はろー、アリスです'
+      click_button '更新する'
 
-    assert_text 'Blog was successfully updated.'
-    assert_selector '.blog-post-title', text: 'はろー、アリスです'
+      assert_text 'Blog was successfully updated.'
+      assert_selector '.blog-post-title', text: 'はろー、アリスです'
 
-    click_link 'Edit this blog'
-    accept_alert do
-      click_link 'Delete'
+      click_link 'Edit this blog'
+      assert_selector 'h1', text: 'Editing blog'
+      accept_alert do
+        click_link 'Delete'
+      end
+      assert_text 'Blog was successfully destroyed.'
+
+      # 他人のブログは編集と削除ができない
+      visit blog_path(blogs(:bob_blog))
+      assert_selector '.blog-post-title', text: 'こんばんは、ボブです'
+      assert_no_link 'Edit this blog'
     end
-    assert_text 'Blog was successfully destroyed.'
-
-    # 他人のブログは編集と削除ができない
-    visit blog_path(blogs(:bob_blog))
-    assert_selector '.blog-post-title', text: 'こんばんは、ボブです'
-    assert_no_link 'Edit this blog'
   end
 
   test 'ブログの検索' do
