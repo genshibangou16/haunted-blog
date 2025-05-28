@@ -10,6 +10,14 @@ class Blog < ApplicationRecord
 
   scope :published, -> { where('secret = FALSE') }
 
+  scope :visible_to, lambda { |user|
+    if user
+      where(secret: false).or(where(user_id: user.id))
+    else
+      where(secret: false)
+    end
+  }
+
   scope :search, lambda { |term|
     term &&= ActiveRecord::Base.sanitize_sql_like(term)
     where('title LIKE :keyword OR content LIKE :keyword', keyword: "%#{term}%")

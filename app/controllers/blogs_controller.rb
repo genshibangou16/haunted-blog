@@ -4,8 +4,7 @@ class BlogsController < ApplicationController
   skip_before_action :authenticate_user!, only: %i[index show]
 
   before_action :set_blog, only: %i[show edit update destroy]
-  before_action :check_user_ownership, only: %i[edit update destroy]
-  before_action :check_user_ownership_for_secret, only: %i[show]
+  before_action :prohibit_unauthenticated_access, only: %i[edit update destroy]
 
   def index
     @blogs = Blog.search(params[:term]).published.default_order
@@ -50,18 +49,14 @@ class BlogsController < ApplicationController
   private
 
   def set_blog
-    @blog = Blog.find(params[:id])
+    @blog = Blog.visible_to(current_user).find(params[:id])
   end
 
   def blog_params
     params.require(:blog).permit(:title, :content, :secret, :random_eyecatch)
   end
 
-  def check_user_ownership
-    raise ActiveRecord::RecordNotFound unless @blog.owned_by?(current_user)
-  end
-
-  def check_user_ownership_for_secret
-    raise ActiveRecord::RecordNotFound if @blog.secret && !@blog.owned_by?(current_user)
+  def prohibit_unauthenticated_access
+    raise ActiveRecord::RecordNotFound unless current_user.blogs.exists?(params[:id])
   end
 end
