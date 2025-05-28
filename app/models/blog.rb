@@ -19,8 +19,8 @@ class Blog < ApplicationRecord
   }
 
   scope :search, lambda { |term|
-    term &&= ActiveRecord::Base.sanitize_sql_like(term)
-    where('title LIKE :keyword OR content LIKE :keyword', keyword: "%#{term}%")
+    sanitized_term = ActiveRecord::Base.sanitize_sql_like(term.to_s)
+    where('title LIKE :keyword OR content LIKE :keyword', keyword: "%#{sanitized_term}%")
   }
 
   scope :default_order, -> { order(id: :desc) }
