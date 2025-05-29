@@ -11,11 +11,7 @@ class Blog < ApplicationRecord
   scope :published, -> { where('secret = FALSE') }
 
   scope :visible_to, lambda { |user|
-    if user
-      where(secret: false).or(where(user_id: user.id))
-    else
-      where(secret: false)
-    end
+    where(user:).or(published)
   }
 
   scope :search, lambda { |term|
