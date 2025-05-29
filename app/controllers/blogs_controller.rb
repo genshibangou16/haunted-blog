@@ -49,9 +49,9 @@ class BlogsController < ApplicationController
   end
 
   def blog_params
-    default_params = %i[title content secret]
-    default_params.push(:random_eyecatch) if current_user.premium
-    params.require(:blog).permit(*default_params)
+    permitted = %i[title content secret]
+    permitted.push(:random_eyecatch) if current_user.premium
+    params.require(:blog).permit(*permitted)
   end
 
   def prohibit_unauthenticated_access
